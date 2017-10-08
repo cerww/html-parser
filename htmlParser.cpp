@@ -23,7 +23,7 @@ htmlTree htmlParser::getTree(){
 						size_t endOfAttributeName = find_first_if_not(m_data, next + 1, isLetter, isNumber);//[next,endOfAttributeName) = attributeName
 						size_t startOfAttributeData = m_data.find_first_of("\"\'", endOfAttributeName + 1);
 						size_t endOfAttributeData = m_data.find(m_data[startOfAttributeData], startOfAttributeData + 1);
-						m_nodeQueue.back()->setAttribute(std::string(&m_data[next], endOfAttributeData - next), std::string(&m_data[startOfAttributeData + 1], endOfAttributeData - startOfAttributeData - 1));
+						m_nodeQueue.back()->setAttribute(std::string(&m_data[next], endOfAttributeName - next), std::string(&m_data[startOfAttributeData + 1], endOfAttributeData - startOfAttributeData - 1));
 						next = endOfAttributeData + 1;
 					}
 				}current = next + 1;

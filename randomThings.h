@@ -165,7 +165,7 @@ inline bool isNumber(char let){
 	return let >= '0'&&let <= '9';
 }
 
-
+constexpr size_t out_of_range = -1;
 template<typename string, typename... pred>
 inline size_t find_first_if_not(const string& str, size_t off, pred... fn) {
 	for (; off < str.size(); ++off){
@@ -174,8 +174,7 @@ inline size_t find_first_if_not(const string& str, size_t off, pred... fn) {
 		//if (!(fn(str[off])||...)){}
 		if(!t)
 			return off;
-	}
-	return -1;
+	}return -1;
 }
 
 template<typename string, typename... pred>
