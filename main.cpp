@@ -2,7 +2,7 @@
 #include "htmlParser.h"
 
 int main(){
-	htmlParser b("<body><aaa></aaa></body>");
+	htmlParser b("<body><aaa l = \"\"></aaa></body>");
 	auto c = b.getTree();
 	while (true);
 

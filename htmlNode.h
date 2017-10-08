@@ -11,6 +11,7 @@ public:
 	void addChild(std::unique_ptr<htmlNode>&&);
 	std::string_view getID()const;
 	std::vector<std::string> getClasses()const;
+	bool hasClass(std::string)const;
 	const std::string& getTagName()const { return m_tagName; };
 	std::string data = "";
 	void setAttribute(const std::string&,std::string);
@@ -26,5 +27,6 @@ private:
 	std::vector<std::unique_ptr<htmlNode>> m_children = {};
 	std::unordered_map<std::string, std::string> m_attributes;
 	const std::string m_tagName;
+	static std::unique_ptr<htmlNode> s_notFoundNode;
 };
 

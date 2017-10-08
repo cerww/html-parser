@@ -212,11 +212,31 @@ inline constexpr auto make_fnOr(fns... fn){
 	return fnOr<fns...>(std::forward<fns>(fn)...);
 }
 
+template<typename T,typename adjFn, typename predFn>
+inline T breadthFirstSearch(T start,adjFn adj, predFn pred){
+	std::vector<T> queue(1, start);
+	while (queue.size()){
+		std::vector<T> next;
+		for(T& node:queue){
+			if(pred(node))
+				return node;
+			for(T&& newNode:adj(node))
+				next.push_back(newNode);			
+		}queue = next;
+	}return {};
+}
 
-
-
-
-
+template<typename T,typename adjFn,typename predFn>
+inline std::pair<T,bool> depthFirstSearch(T start,adjFn adj,predFn pred){
+	if (pred(start))
+		return { start,true };
+	for(T&& next:adj(start)){
+		const auto[node, success] = depthFirstSearch(next, adj, pred);
+		if(success){
+			return { node,true };
+		}
+	}return { start,false };
+}
 
 //iota for for loops
 /*
