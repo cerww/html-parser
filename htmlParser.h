@@ -1,7 +1,7 @@
 #pragma once
 #include "htmlTree.h"
 #include <unordered_set>
-constexpr bool notFound = 0;
+constexpr bool notFound = false;
 constexpr bool found = true;
 
 

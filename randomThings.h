@@ -38,27 +38,27 @@ inline auto not(fn func) {
 	return Not<fn>(std::forward<fn>(func));
 }
 
-inline std::vector<uint64_t> Range(const uint64_t n) {
-	std::vector<uint64_t> retVal(n);
+inline std::vector<int> Range(const int n) {
+	std::vector<int> retVal(n);
 	std::generate(retVal.begin(), retVal.end(), [awesome = 0]()mutable {return awesome++; });
 	return retVal;
 }
 
-inline std::vector<uint64_t> Range(const uint64_t n1,const uint64_t n2) {
-	std::vector<uint64_t> retVal(n2 - n1);
+inline std::vector<int> Range(const int n1,const int n2) {
+	std::vector<int> retVal(n2 - n1);
 	std::generate(retVal.begin(), retVal.end(), [awesome = n1]()mutable {return awesome++; });
 	return retVal;
 }
 
 template<int size>
-inline constexpr std::array<uint64_t, size> RangeArray(const uint64_t start) {
-	std::array<uint64_t, size> retVal = {};
+inline constexpr std::array<int, size> RangeArray(const int start) {
+	std::array<int, size> retVal = {};
 	std::generate(retVal.begin(), retVal.end(), [abc = start]()mutable {return abc++; });
 	return retVal;
 }
 
 //I found this online
-inline std::string getFileContentsa(const std::string& filePath) {
+inline std::string getFileContents(const std::string& filePath) {
 	std::string fileContents;
 	std::ifstream file(filePath, std::ios::in);
 	file.seekg(0, std::ios::end);
@@ -159,6 +159,20 @@ inline std::vector<std::string> split(const std::string& string,char letter) {
 		currentA = spot + 1;
 	}while(currentA);//std::string::npos + 1 = 0
 	return retVal;
+}
+
+template<typename T>
+inline std::vector<std::vector<T>> split(std::vector<T> stuff,T thing){
+	std::vector<std::vector<T>> retVal;
+	std::vector<T> current;
+	for (int i = 0; i < stuff.size(); ++i) {
+		if(stuff[i]==thing){
+			retVal.push_back(std::move(current));
+			current = {};
+		}else{
+			current.push_back(std::move(stuff[i]));
+		}
+	}return retVal;
 }
 
 inline bool isNumber(char let){
