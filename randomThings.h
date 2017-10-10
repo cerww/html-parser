@@ -145,7 +145,7 @@ constexpr inline std::array<T1, size> array_cast_impl(std::array<T2, size> oldAr
 }
 
 inline bool isLetter(char let) {
-	return let >= 'a' && let <= 'z' || let >= 'A' && let <= 'Z' || let == '_'||let=='$';
+	return let >= 'a' && let <= 'z' || let >= 'A' && let <= 'Z'; 
 }
 
 inline std::vector<std::string> split(const std::string& string,char letter) {

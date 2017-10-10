@@ -8,8 +8,9 @@ htmlNode::htmlNode(std::string t_tagName):m_tagName(t_tagName){
 	m_attributes["class"] = "";
 }
 
-void htmlNode::addChild(std::unique_ptr<htmlNode>&& newNode){
-	m_children.push_back(std::move(newNode));
+htmlNode* htmlNode::addChild(std::unique_ptr<htmlNode>&& newNode){
+	newNode->m_parent = this;
+	return m_children.emplace_back(std::move(newNode)).get();
 }
 
 std::string_view htmlNode::getID() const{
@@ -55,6 +56,10 @@ std::vector<htmlNode*> htmlNode::getChildren(){
 	for(auto& child:m_children){
 		retVal.push_back(child.get());
 	}return retVal;
+}
+
+htmlNode * htmlNode::getParent(){
+	return m_parent;
 }
 
 htmlNode* htmlNode::getElementByID(std::string id){

@@ -3,10 +3,8 @@
 #include "randomThings.h"
 
 int main(){
-	std::string aew = "abacD";
-	std::cout << find_first_if_not(aew, 0, [](char c) {return c == 'a'; }, [](char c) {return c == 'b'; });
 
-	htmlParser b("<body><aaa l = \"awesome\"></aaa></body>");
+	htmlParser b("<body><aaa lopy = \"awesome\" class = \"blue\"><!-- --><abc/></aaa></body>");
 	auto c = b.getTree();
 	while (true);
 
