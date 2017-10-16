@@ -12,8 +12,13 @@
 #include <fstream>
 #include <array>
 #include <forward_list>
+#include <queue>
+#include <thread>
+#include <ppl.h>
+#include <ppltasks.h>
+#include <ppltaskscheduler.h>
 //that might be usefull and not in the std already
-
+using lock_t = std::unique_lock<std::mutex>;
 template<typename T>
 decltype(auto) derefCompletely(T& thing) {
 	if constexpr(std::is_pointer_v<T>)
@@ -233,9 +238,9 @@ inline T breadthFirstSearch(T start,adjFn adj, predFn pred){
 		for(T& node:queue){
 			if(pred(node))
 				return node;
-			for(T&& newNode:adj(node))
+			for(T& newNode:adj(node))
 				next.push_back(newNode);			
-		}queue = next;
+		}queue = std::move(next);
 	}return {};
 }
 
@@ -251,46 +256,143 @@ inline std::pair<T,bool> depthFirstSearch(T start,adjFn adj,predFn pred){
 	}return { start,false };
 }
 
-//iota for for loops
-/*
-template<typename T>
-class iota {
-public:
-	iota(T t_thing) :m_thing(t_thing) {};
-	iota(T t_thing, size_t t_max) :m_thing(t_thing), m_max(t_max) {};
-	struct iterator {
-		iterator(iota<T>& t_parent, size_t t_count) :m_parent(t_parent), m_count(t_count) {};
-		iterator(iota<T>& t_parent) :m_parent(t_parent) {};
-		iterator& operator++(int) {
-			++m_count;
-			m_parent.m_thing++;
-			return *this;
-		};
-		iterator& operator++() {
-			++m_count;
-			++m_parent.m_thing;
-			return *this;
-		};
-		bool operator!=(const iterator& other) {
-			return m_count != other.m_count;
+template<typename T, typename adjFn, typename predFn>
+inline std::vector<T> breadthFirstSearchMultiple(T start, adjFn adj, predFn pred) {
+	std::deque<T> queue(1, start);
+	std::vector<T> retVal;
+	while (queue.size()) {
+		std::deque<T> next;
+		for (T& node : queue) {
+			if (pred(node))
+				retVal.push_back(node);
+			for (T& newNode : adj(node))
+				next.push_back(newNode);
+		}queue = std::move(next);
+	}return retVal;
+}
+
+template<typename T, typename adjFn, typename predFn>
+inline T breadthFirstSearchCyclic(T start, adjFn adj, predFn pred) {
+	std::vector<T> queue(1, start);
+	std::unordered_map<T, int> visited;
+	int lvl = 0;
+	while (queue.size()) {
+		std::vector<T> next;
+		for (T& node : queue) {
+			if (pred(node))
+				return node;
+			for (T& newNode : adj(node))
+				if(visited.find(newNode)==visited.end())
+					next.push_back(newNode);
+			visited[node] = lvl;
+		}queue = std::move(next);
+		++lvl;
+	}return {};
+}
+
+template<typename T, typename adjFn, typename predFn>
+inline std::vector<T> BFSM_P(T start, adjFn adj, predFn pred) {
+	std::mutex lockThingy;
+	std::vector<T> retVal;
+	std::deque<T> queue(1, start);
+	std::atomic<bool> done = false;
+	std::vector<char> not_running_things;//vector<bool> is bad
+	auto fn = [&](const int i) {
+		while(!done){
+			if(queue.size()){
+				T current;
+				{	std::unique_lock<std::mutex> lock{ lockThingy };
+					current = std::move(queue.front());
+					queue.pop_front();
+				}not_running_things[i] = 1;
+				if(pred(current)){
+					std::unique_lock<std::mutex> lock{ lockThingy };
+					retVal.push_back(std::move(current));
+				}else{
+					std::unique_lock<std::mutex> lock{ lockThingy };
+					for(auto&& next:adj(current))
+						queue.push_back(std::move(next));					
+				}
+			}else{
+				not_running_things[i] = 0;
+				std::this_thread::sleep_for(std::chrono::microseconds(10));
+			}
 		}
-		const T& operator*() {
-			return m_parent.m_thing;
-		}
-	private:
-		iota<T>& m_parent;
-		size_t m_count = 0;
 	};
-	iterator begin() {
-		return iterator(*this);
+	while (!done) {
+		
+	}return retVal;
+}
+
+template<typename T,typename adjFn,typename predFn,int threads = 4>
+class BFS_PAR {
+public:
+	BFS_PAR(T start,adjFn t_adj,predFn t_pred):
+		m_queue(1,std::move(start)),
+		adj(std::move(t_adj)),
+		pred(std::move(t_pred)){};
+	std::vector<T> doStuffs(){
+		for(int i = 0;i<threads;++i){
+			//m_threads[i] = concurrency::create_task<void>([&,l = i, this]() {while (!m_done) runThing(i); });
+			m_threads[i] = std::thread([&, this](const int id) {while (!m_done) runThing(id); }, i);
+		}while (!m_done) {
+			runThing(threads);
+			checkIfDone();
+		}return retVal;
 	}
-	iterator end() {
-		return iterator(*this, m_max);
+	~BFS_PAR(){
+		for(auto& t:m_threads)
+			t.join();		
 	}
 private:
-	friend struct iterator;
-	T m_thing;
-	const size_t m_max = -1;//infinity(close enough, accually size_t::max)
+	void runThing(const int id){
+		if (m_queue.size()) {
+			T current;
+			{	lock_t lock{ m_lock };
+				current = std::move(m_queue.front());
+				m_queue.pop_front();
+			}m_notRunningThreads[id] = 1;
+			if (pred(current)) {
+				lock_t lock{ m_lock };
+				retVal.push_back(std::move(current));
+			}
+			else {
+				lock_t lock{ m_lock };
+				for (auto&& next : adj(current))
+					m_queue.push_back(std::move(next));
+			}
+		}
+		else {
+			m_notRunningThreads[id] = 0;
+			std::this_thread::sleep_for(std::chrono::microseconds(10));
+		}
+	}
+	void checkIfDone(){
+		for(int i = 0;i<threads+1;++i)
+			if (m_notRunningThreads[i])
+				return;//not done
+		m_done = true;
+	}
+	std::mutex m_lock;
+	std::deque<T> m_queue;
+	adjFn adj;
+	predFn pred;
+	std::atomic<bool> m_done = false;
+	std::array<bool, threads + 1> m_notRunningThreads = {};//+1 for main thread
+	//std::array<concurrency::task<void>, threads> m_threads;
+	std::array<std::thread, threads> m_threads;
+	std::vector<T> retVal;
 };
-*/
 
+template<typename T,typename adjFn,typename predFn>
+std::vector<T> BFS_Parallel(T start,adjFn adj, predFn pred){
+	BFS_PAR<T, adjFn, predFn> thingy(start, adj, pred);
+	return thingy.doStuffs();
+}
+/*
+	auto fn = [&this](const int id){
+		while(!m_done){
+			runThing(id);
+		}
+	}
+*/
