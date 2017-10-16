@@ -12,6 +12,7 @@ public:
 	std::string_view		 getID()const;
 	std::vector<std::string> getClasses()const;
 	bool				     hasClass(std::string)const;
+	void					 addClass();
 	const std::string&	     getTagName()const { return m_tagName; };
 	std::string			     data = "";
 	void				     setAttribute(const std::string&,std::string);
@@ -24,6 +25,12 @@ public:
 	std::vector<htmlNode*>   getElementsByTagName(std::string name);
 	std::vector<htmlNode*>   getChildren();
 	htmlNode*				 getParent();
+	//template<typename string_t>
+	bool					 matchesSelector(const std::string&)const;
+	//template<typename string_t>
+	std::vector<htmlNode*>   querySelectorAll(const std::string&);
+	//template<typename string_t>
+	htmlNode*				 querySelector(const std::string&);
 private:
 	std::vector<std::unique_ptr<htmlNode>> m_children = {};
 	std::unordered_map<std::string, std::string> m_attributes;
@@ -31,4 +38,5 @@ private:
 	static std::unique_ptr<htmlNode> s_notFoundNode;
 	htmlNode* m_parent;
 };
+
 

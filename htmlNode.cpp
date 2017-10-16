@@ -37,8 +37,7 @@ void htmlNode::removeAttribute(std::string_view name){
 }
 
 std::string_view htmlNode::getAttribute(const std::string& name){
-	if (const auto it = m_attributes.find(name);
-		it!=m_attributes.end())
+	if (const auto it = m_attributes.find(name); it!=m_attributes.end())
 		return std::string_view(it->second);
 	return "";
 }
@@ -53,9 +52,10 @@ size_t htmlNode::numChildren() const{
 
 std::vector<htmlNode*> htmlNode::getChildren(){
 	std::vector<htmlNode*> retVal(m_children.size());
-	for(auto& child:m_children){
-		retVal.push_back(child.get());
-	}return retVal;
+	//for(auto& child:m_children)
+	for (int i = 0; i < m_children.size(); ++i)
+		retVal[i] = m_children[i].get();
+	return retVal;
 }
 
 htmlNode * htmlNode::getParent(){
@@ -88,21 +88,27 @@ std::vector<htmlNode*> htmlNode::getElementsByClassName(std::string name){
 				next.push_back(i);				
 			}
 		}queue = next;
-	}return {};
+	}return retVal;
 }
 
 std::vector<htmlNode*> htmlNode::getElementsByTagName(std::string name){
-	std::vector<htmlNode*> retVal;
-	std::vector<htmlNode*> queue(1, this);
-	while (queue.size()) {
-		std::vector<htmlNode*> next;
-		for (auto& node : queue) {
-			if (node->getTagName() == name) {
-				retVal.push_back(node);
-			}for (auto& i : node->getChildren()) {
-				next.push_back(i);				
-			}
-		}queue = next;
-	}return {};
+	return breadthFirstSearchMultiple(this, [](htmlNode* node) {return node->getChildren(); }, [&](htmlNode* node) {return node->getID() == name; });
 }
 
+bool htmlNode::matchesSelector(const std::string& selector)const {
+	const auto temp = std::string_view(&selector[1], selector.size() - 1);//everything except the first char
+	return m_tagName == selector || m_attributes.at("id") == temp && selector[0]=='#' || hasClass(std::string(temp)) && selector[0]=='.';
+}
+
+//template<typename string_t>
+std::vector<htmlNode*> htmlNode::querySelectorAll(const std::string& selector){
+	//BFS_PAR(this, [](htmlNode* n) { return n->getChildren(); }, [&](htmlNode* node) {return node->matchesSelector(selector); });
+	return breadthFirstSearchMultiple(this, [](htmlNode* n) { return n->getChildren(); }, [&](htmlNode* node) {return node->matchesSelector(selector); });
+	//return BFS_Parallel(this, [](htmlNode* n) { return n->getChildren(); }, [&](htmlNode* node) {return node->matchesSelector(selector); });
+}
+
+//template<typename string_t>
+htmlNode* htmlNode::querySelector(const std::string& selector){
+	auto temp = breadthFirstSearch(this, [](htmlNode* n) { return n->getChildren(); }, [&](htmlNode* node) {return node->matchesSelector(selector); });
+	return temp ? temp: s_notFoundNode.get();
+}

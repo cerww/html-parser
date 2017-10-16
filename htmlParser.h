@@ -17,5 +17,10 @@ private:
 	void addNode(std::string_view);
 	std::unordered_map<std::string_view, int> m_usedTagNames;
 	bool removeTillTagName(std::string_view tagName);
+	size_t addAttributes(size_t);
+	size_t foundNewNode(size_t);
+	size_t foundEndTag(size_t);
+	size_t foundTextNode(size_t);
+	bool isImmediatelyEnddedTag(const std::string&)const;
 };
 
